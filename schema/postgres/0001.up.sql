@@ -5,10 +5,10 @@ CREATE TABLE campaigns (
 
 CREATE TABLE items (
     id SERIAL PRIMARY KEY,
-    campaign_id INTEGER PRIMARY KEY REFERENCES campaigns (id),
+    campaign_id INTEGER REFERENCES campaigns (id),
     name TEXT,
     description TEXT,
-    priority INTEGER,
+    priority SERIAL,
     removed BOOLEAN,
     created_at timestamp
 );
