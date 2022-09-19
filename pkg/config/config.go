@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"os"
 
 	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
@@ -9,7 +10,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.ConfigRedis) {
+func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.ConfigRedis, natsqueue.ConfigNats) {
 	_ = godotenv.Load()
 
 	host, _ := os.LookupEnv("SERVICE_HOST")
@@ -23,6 +24,9 @@ func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.
 
 	hostRd, _ := os.LookupEnv("RD_HOST")
 	portRd, _ := os.LookupEnv("RD_PORT")
+
+	hostN, _ := os.LookupEnv("N_HOST")
+	portN, _ := os.LookupEnv("N_PORT")
 
 	configDb := repository.ConfigRepository{
 		Host:     hostDb,
@@ -41,5 +45,11 @@ func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.
 		Host: hostRd,
 		Port: portRd,
 	}
-	return config, configDb, configRedis
+
+	configNats := natsqueue.ConfigNats{
+		Host: hostN,
+		Port: portN,
+	}
+
+	return config, configDb, configRedis, configNats
 }

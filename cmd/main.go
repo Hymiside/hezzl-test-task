@@ -10,6 +10,7 @@ import (
 
 	"github.com/Hymiside/hezzl-test-task/pkg/config"
 	"github.com/Hymiside/hezzl-test-task/pkg/handler"
+	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository"
 	"github.com/Hymiside/hezzl-test-task/pkg/server"
@@ -17,25 +18,31 @@ import (
 )
 
 func main() {
-	cfgSrv, cfgDb, cfgRd := config.InitConfig()
+	cfgSrv, cfgDb, cfgRd, cfgN := config.InitConfig()
 
 	srv := &server.Server{}
 	h := &handler.Handler{}
 
 	rdb, err := rediscache.NewRedis(cfgRd)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Panicf(err.Error())
 	}
 
 	repo, err := repository.NewRepository(cfgDb)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Panicf(err.Error())
 	}
-	services := service.NewService(*repo, *rdb)
+
+	nc, err := natsqueue.NewNats(cfgN)
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+
+	services := service.NewService(*repo, *rdb, *nc)
 
 	go func() {
 		if err = srv.RunServer(h.InitHandler(*services), cfgSrv); err != nil {
-			log.Fatalf(err.Error())
+			log.Panicf(err.Error())
 		}
 	}()
 	log.Printf("authentication microservice launched on http://%s:%s/", cfgSrv.Host, cfgSrv.Port)
@@ -49,13 +56,14 @@ func main() {
 		cancel()
 	}()
 
+	nc.CloseNats()
 	if err = srv.ShutdownServer(ctx); err != nil {
-		log.Fatalf(err.Error())
+		log.Panicf(err.Error())
 	}
 	if err = repo.CloseRepository(); err != nil {
-		log.Fatalf(err.Error())
+		log.Panicf(err.Error())
 	}
 	if err = rdb.CloseRedis(); err != nil {
-		log.Fatalf(err.Error())
+		log.Panicf(err.Error())
 	}
 }

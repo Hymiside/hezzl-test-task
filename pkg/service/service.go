@@ -3,6 +3,8 @@ package service
 import (
 	"log"
 
+	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
+
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository"
@@ -11,10 +13,11 @@ import (
 type Service struct {
 	repo *repository.Repository
 	ch   *rediscache.Redis
+	nc   *natsqueue.Nats
 }
 
-func NewService(r repository.Repository, ch rediscache.Redis) *Service {
-	return &Service{repo: &r, ch: &ch}
+func NewService(r repository.Repository, ch rediscache.Redis, nc natsqueue.Nats) *Service {
+	return &Service{repo: &r, ch: &ch, nc: &nc}
 }
 
 func (r *Service) CreateItem(ni models.NewItem) (models.Item, error) {
