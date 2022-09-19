@@ -1,11 +1,12 @@
 package config
 
 import (
+	"os"
+
 	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository"
 	"github.com/Hymiside/hezzl-test-task/pkg/server"
 	"github.com/joho/godotenv"
-	"os"
 )
 
 func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.ConfigRedis) {

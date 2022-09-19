@@ -2,12 +2,13 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/Hymiside/hezzl-test-task/pkg/models"
-	"github.com/Hymiside/hezzl-test-task/pkg/service"
-	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/Hymiside/hezzl-test-task/pkg/models"
+	"github.com/Hymiside/hezzl-test-task/pkg/service"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {

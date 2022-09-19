@@ -1,10 +1,11 @@
 package service
 
 import (
+	"log"
+
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository"
-	"log"
 )
 
 type Service struct {
