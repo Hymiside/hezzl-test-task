@@ -7,17 +7,7 @@ import (
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 )
 
-func ResponseStatusOk(w http.ResponseWriter, field, message string) {
-	res := make(map[string]string)
-	res[field] = message
-	resJSON, _ := json.Marshal(res)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, _ = w.Write(resJSON)
-}
-
-func ResponseStatusOk2(w http.ResponseWriter, message models.Item) {
+func ResponseStatusOk(w http.ResponseWriter, message models.Item) {
 	res := make(map[string]models.Item)
 	res["data"] = message
 	resJSON, _ := json.Marshal(res)
@@ -27,8 +17,18 @@ func ResponseStatusOk2(w http.ResponseWriter, message models.Item) {
 	_, _ = w.Write(resJSON)
 }
 
-func ResponseStatusOk3(w http.ResponseWriter, message []models.Item) {
+func ResponseStatusOk2(w http.ResponseWriter, message []models.Item) {
 	res := make(map[string][]models.Item)
+	res["data"] = message
+	resJSON, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, _ = w.Write(resJSON)
+}
+
+func ResponseStatusOk3(w http.ResponseWriter, message *models.DeleteItem) {
+	res := make(map[string]*models.DeleteItem)
 	res["data"] = message
 	resJSON, _ := json.Marshal(res)
 
@@ -39,7 +39,7 @@ func ResponseStatusOk3(w http.ResponseWriter, message []models.Item) {
 
 func ResponseError(w http.ResponseWriter, message string, code int) {
 	res := make(map[string]string)
-	res["error"] = message
+	res["message"] = message
 	resJSON, _ := json.Marshal(res)
 
 	w.Header().Set("Content-Type", "application/json")

@@ -19,3 +19,9 @@ type Item struct {
 	Removed     bool      `db:"removed"`
 	CreatedAt   time.Time `db:"created_at"`
 }
+
+type DeleteItem struct {
+	ID         int  `db:"id"`
+	CampaignId int  `db:"campaign_id"`
+	Removed    bool `db:"removed"`
+}
