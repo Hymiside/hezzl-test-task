@@ -61,9 +61,7 @@ func (r *Repository) CreateItem(ni models.NewItem) (models.Item, error) {
 		return models.Item{}, fmt.Errorf("error commit item: %w", err)
 	}
 
-	//if err = r.Db.Select(&i, `SELECT * FROM items WHERE id=$1 AND campaign_id=$2;`, itemId, ni.CampaignId); err != nil {
-	//	return []models.Item{}, fmt.Errorf("error return item: %w", err)
-	//}
+	//
 
 	rows, err = r.Db.Queryx(`SELECT * FROM items WHERE id=$1 AND campaign_id=$2;`, itemId, ni.CampaignId)
 	if err != nil {
@@ -88,4 +86,13 @@ func (r *Repository) GetCampaign(ni models.NewItem) error {
 		return fmt.Errorf("error item not found: %w", err)
 	}
 	return nil
+}
+
+func (r *Repository) GetItems() ([]models.Item, error) {
+	var i []models.Item
+
+	if err := r.Db.Select(&i, `SELECT * FROM items;`); err != nil {
+		return nil, fmt.Errorf("error return item: %w", err)
+	}
+	return i, nil
 }

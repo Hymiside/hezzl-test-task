@@ -30,7 +30,7 @@ func (h *Handler) InitHandler(s service.Service) *chi.Mux {
 	h.handler.Post("/item/create", handlers.createItem)
 	h.handler.Patch("/item/update", nil)
 	h.handler.Delete("/item/remove", nil)
-	h.handler.Get("/item/List", nil)
+	h.handler.Get("/item/list", handlers.getItems)
 
 	return h.handler
 }
@@ -68,4 +68,13 @@ func (s *Handlers) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ResponseStatusOk2(w, i)
+}
+
+func (s *Handlers) getItems(w http.ResponseWriter, r *http.Request) {
+	items, err := s.serv.GetItems()
+	if err != nil {
+		ResponseError(w, err.Error(), 500)
+		return
+	}
+	ResponseStatusOk3(w, items)
 }

@@ -25,6 +25,16 @@ func ResponseStatusOk2(w http.ResponseWriter, message models.Item) {
 	_, _ = w.Write(resJSON)
 }
 
+func ResponseStatusOk3(w http.ResponseWriter, message []models.Item) {
+	res := make(map[string][]models.Item)
+	res["data"] = message
+	resJSON, _ := json.Marshal(message)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, _ = w.Write(resJSON)
+}
+
 func ResponseError(w http.ResponseWriter, message string, code int) {
 	res := make(map[string]string)
 	res["message"] = message

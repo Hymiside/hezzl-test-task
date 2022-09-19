@@ -10,22 +10,28 @@ import (
 
 	"github.com/Hymiside/hezzl-test-task/pkg/config"
 	"github.com/Hymiside/hezzl-test-task/pkg/handler"
+	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository"
 	"github.com/Hymiside/hezzl-test-task/pkg/server"
 	"github.com/Hymiside/hezzl-test-task/pkg/service"
 )
 
 func main() {
-	cfgSrv, cfgDb := config.InitConfig()
+	cfgSrv, cfgDb, cfgRd := config.InitConfig()
 
 	srv := &server.Server{}
 	h := &handler.Handler{}
+
+	rdb, err := rediscache.NewRedis(cfgRd)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 
 	repo, err := repository.NewRepository(cfgDb)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	services := service.NewService(*repo)
+	services, _ := service.NewService(*repo, *rdb)
 
 	go func() {
 		if err = srv.RunServer(h.InitHandler(*services), cfgSrv); err != nil {
@@ -47,6 +53,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 	if err = repo.CloseRepository(); err != nil {
+		log.Fatalf(err.Error())
+	}
+	if err = rdb.CloseRedis(); err != nil {
 		log.Fatalf(err.Error())
 	}
 }
