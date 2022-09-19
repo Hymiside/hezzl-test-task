@@ -28,7 +28,7 @@ func (h *Handler) InitHandler(s service.Service) *chi.Mux {
 	handlers := NewHandlers(s)
 
 	h.handler.Post("/item/create", handlers.createItem)
-	h.handler.Patch("/item/update", nil)
+	h.handler.Patch("/item/update", handlers.updateItem)
 	h.handler.Delete("/item/remove", nil)
 	h.handler.Get("/item/list", handlers.getItems)
 
@@ -77,4 +77,45 @@ func (s *Handlers) getItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ResponseStatusOk3(w, items)
+}
+
+func (s *Handlers) updateItem(w http.ResponseWriter, r *http.Request) {
+	var (
+		err error
+		i   models.Item
+		ui  []models.Item
+	)
+
+	itemId := r.URL.Query().Get("id")
+	campaignId := r.URL.Query().Get("campaignId")
+
+	if err = json.NewDecoder(r.Body).Decode(&i); err != nil {
+		ResponseError(w, "invalid request", 404)
+		return
+	}
+
+	if i.Name == "" || itemId == "" || campaignId == "" {
+		ResponseError(w, "invalid request", 404)
+		return
+	}
+
+	i.CampaignId, err = strconv.Atoi(campaignId)
+	if err != nil {
+		ResponseError(w, "invalid request", 404)
+		return
+	}
+
+	i.ID, err = strconv.Atoi(itemId)
+	if err != nil {
+		ResponseError(w, "invalid request", 404)
+		return
+	}
+
+	ui, err = s.serv.UpdateItem(i)
+	if err != nil {
+		ResponseError(w, err.Error(), 500)
+		return
+	}
+	ResponseStatusOk3(w, ui)
+
 }

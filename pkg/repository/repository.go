@@ -55,14 +55,12 @@ func (r *Repository) CreateItem(ni models.NewItem) (models.Item, error) {
 	err := r.Db.QueryRowx(`INSERT INTO items (campaign_id, name, description, removed, created_at) 
 							   VALUES ($1, $2, $3, $4, $5) RETURNING id;`, ni.CampaignId, ni.Name, ni.Description, ni.Removed, ni.CreatedAt).Scan(&itemId)
 	if err != nil {
+		_ = tx.Rollback()
 		return models.Item{}, fmt.Errorf("error create item: %w", err)
 	}
-
 	if err = tx.Commit(); err != nil {
 		return models.Item{}, fmt.Errorf("error commit item: %w", err)
 	}
-
-	//
 
 	rows, err = r.Db.Queryx(`SELECT * FROM items WHERE id=$1 AND campaign_id=$2;`, itemId, ni.CampaignId)
 	if err != nil {
@@ -96,4 +94,38 @@ func (r *Repository) GetItems() ([]models.Item, error) {
 		return nil, fmt.Errorf("error return item: %w", err)
 	}
 	return i, nil
+}
+
+func (r *Repository) UpdateItem(i models.Item) ([]models.Item, error) {
+	var (
+		id int
+		is []models.Item
+	)
+	tx := r.Db.MustBegin()
+
+	if err := tx.QueryRowx(`SELECT id FROM items WHERE id = $1 AND campaign_id=$2`, i.ID, i.CampaignId).Scan(&id); err != nil {
+		return nil, fmt.Errorf("error item not found: %w", err)
+	}
+
+	if i.Description == "" {
+		err := r.Db.QueryRowx(`UPDATE items SET name=$1 WHERE id=$2 AND campaign_id=$3;`, i.Name, i.ID, i.CampaignId).Err()
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("error create item: %w", err)
+		}
+	} else {
+		err := r.Db.QueryRowx(`UPDATE items SET name=$1, description=$2 WHERE id=$3 AND campaign_id=$4;`, i.Name, i.Description, i.ID, i.CampaignId).Err()
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("error create item: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("error commit item: %w", err)
+	}
+
+	if err := r.Db.Select(&is, `SELECT * FROM items WHERE id=$1 AND campaign_id=$2;`, i.ID, i.CampaignId); err != nil {
+		return nil, fmt.Errorf("error return item: %w", err)
+	}
+	return is, nil
 }

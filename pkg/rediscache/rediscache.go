@@ -67,3 +67,12 @@ func (c *Redis) SetItems(i []models.Item) error {
 	}
 	return nil
 }
+
+func (c *Redis) DeleteItems() error {
+	ctx := context.Background()
+
+	if err := c.ch.Delete(ctx, "DataItems"); err != nil {
+		return err
+	}
+	return nil
+}

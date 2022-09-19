@@ -58,3 +58,33 @@ func (r *Service) SetItemsRedis(i []models.Item) error {
 	}
 	return nil
 }
+
+func (r *Service) DeleteItemsRedis() error {
+	if err := r.ch.DeleteItems(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Service) UpdateItem(i models.Item) ([]models.Item, error) {
+	var dataItems []models.Item
+
+	ui, err := r.repo.UpdateItem(i)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = r.DeleteItemsRedis(); err != nil {
+		return nil, err
+	}
+
+	dataItems, err = r.repo.GetItems()
+	if err != nil {
+		return nil, err
+	}
+	if err = r.SetItemsRedis(dataItems); err != nil {
+		log.Println("error set cache") // необходимо отправить лог в ClickHouse
+	}
+
+	return ui, nil
+}
