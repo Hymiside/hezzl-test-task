@@ -4,7 +4,6 @@ import (
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository"
-	"log"
 )
 
 type Service struct {
@@ -32,22 +31,30 @@ func (r *Service) CreateItem(ni models.NewItem) (models.Item, error) {
 }
 
 func (r *Service) GetItems() ([]models.Item, error) {
-	var c *RedisCache
-
-	dataItems, err := c.GetItemsRedis()
+	//var c *RedisCache
+	dataItems, err := r.repo.GetItems()
 	if err != nil {
-
-		dataItems, err = r.repo.GetItems()
-		if err != nil {
-			return nil, err
-		}
-
-		if err = c.SetItemsRedis(dataItems); err != nil {
-			log.Println("error set cache") // необходимо отправить лог в ClickHouse
-		}
-		return dataItems, nil
+		return nil, err
+	}
+	if dataItems == nil {
+		return []models.Item{}, nil
 	}
 	return dataItems, nil
+
+	//dataItems, err := c.GetItemsRedis()
+	//if err != nil {
+	//
+	//	dataItems, err = r.repo.GetItems()
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	if err = c.SetItemsRedis(dataItems); err != nil {
+	//		log.Println("error set cache") // необходимо отправить лог в ClickHouse
+	//	}
+	//	return dataItems, nil
+	//}
+	//return dataItems, nil
 }
 
 func (c *RedisCache) GetItemsRedis() ([]models.Item, error) {
