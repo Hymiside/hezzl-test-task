@@ -15,8 +15,4 @@ CREATE TABLE items (
 
 INSERT INTO campaigns (name) VALUES ('DnD');
 
-CREATE UNIQUE INDEX ON campaigns (id);
-CREATE UNIQUE INDEX ON items (id);
-CREATE UNIQUE INDEX ON items (campaign_id);
-CREATE INDEX ON items (name);
 
