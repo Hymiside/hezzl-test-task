@@ -19,12 +19,10 @@ type Redis struct {
 type ConfigRedis struct {
 	Host string
 	Port string
-	DB   int
 }
 
-var ctx = context.Background()
-
 func NewRedis(c ConfigRedis) (*Redis, error) {
+	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
 		Addr: fmt.Sprintf("%s:%s", c.Host, c.Port),
 	})
@@ -36,7 +34,6 @@ func NewRedis(c ConfigRedis) (*Redis, error) {
 	ch := cache.New(&cache.Options{
 		Redis: rdb,
 	})
-
 	return &Redis{rdb: rdb, ch: ch}, nil
 }
 
@@ -49,6 +46,7 @@ func (c *Redis) CloseRedis() error {
 
 func (c *Redis) GetItems() ([]models.Item, error) {
 	var i []models.Item
+	ctx := context.Background()
 
 	if err := c.ch.Get(ctx, "DataItems", i); err != nil {
 		return nil, err
@@ -57,6 +55,8 @@ func (c *Redis) GetItems() ([]models.Item, error) {
 }
 
 func (c *Redis) SetItems(i []models.Item) error {
+	ctx := context.Background()
+
 	if err := c.ch.Set(&cache.Item{
 		Ctx:   ctx,
 		Key:   "DataItems",

@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	services, _ := service.NewService(*repo, *rdb)
+	services := service.NewService(*repo, *rdb)
 
 	go func() {
 		if err = srv.RunServer(h.InitHandler(*services), cfgSrv); err != nil {
