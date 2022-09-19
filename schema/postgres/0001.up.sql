@@ -15,4 +15,7 @@ CREATE TABLE items (
 
 INSERT INTO campaigns (name) VALUES ('DnD');
 
+CREATE INDEX ON items (campaign_id);
+CREATE INDEX ON items (name);
+
 
