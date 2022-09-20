@@ -12,7 +12,7 @@
 
 ## Методы
 1. Create Item - создает новый айтем зависимый, обновляет Redis и возвращает созданный айтем
-```json
+```
 TYPE: POST
 URL: /item/create?campaignId=int
 
