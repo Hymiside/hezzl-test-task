@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-redis/cache/v8"
 	"time"
+
+	"github.com/go-redis/cache/v8"
 
 	"github.com/go-redis/redis/v8"
 
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 )
-
-const ttl = time.Minute
 
 type ConfigRedis struct {
 	Host string
@@ -23,6 +22,8 @@ type Repository struct {
 	redis *redis.Client
 	ch    *cache.Cache
 }
+
+const ttl = time.Minute
 
 func NewRepository(ctx context.Context, c ConfigRedis) (*Repository, error) {
 	rdb := redis.NewClient(&redis.Options{

@@ -24,5 +24,11 @@ func ResponseOk(w http.ResponseWriter, data interface{}) {
 
 func ResponseError(w http.ResponseWriter, message string, code int) {
 	w.WriteHeader(code)
-	_, _ = w.Write([]byte(message))
+
+	resJSON, err := json.Marshal(map[string]string{"error": message})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(resJSON)
 }

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
@@ -23,8 +24,8 @@ type Repository struct {
 }
 
 var (
-	ItemAlreadyDelete = errors.New("item already delete")
-	ItemNotFound      = errors.New("item not found")
+	ItemNotFound     = errors.New("item not found")
+	CampaignNotFound = errors.New("campaign not found")
 )
 
 // NewRepository инициализация работы с БД
@@ -55,15 +56,16 @@ func (r *Repository) CreateItem(ctx context.Context, item models.NewItem) (int, 
 	}
 	defer tx.Rollback()
 
-	// Проверяем наличие кампании (можно это сделать на ключах в БД и без запросов, но в ТЗ описано явно проверять)
 	q1 := `select id from campaigns where id = $1`
 	row := r.db.QueryRowContext(ctx, q1, item.CampaignId)
 
 	var campaignId int
 	if err = row.Scan(&campaignId); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, CampaignNotFound
+		}
 		return 0, 0, fmt.Errorf("failed to query campaning: %w", err)
 	}
-
 	if err = row.Err(); err != nil {
 		return 0, 0, fmt.Errorf("got row error of query campaning: %w", err)
 	}
@@ -86,43 +88,6 @@ func (r *Repository) CreateItem(ctx context.Context, item models.NewItem) (int, 
 	}
 
 	return itemId, priority, nil
-}
-
-// GetItem Получает айтем по идентификаторам кампании и айтема
-func (r *Repository) GetItem(ctx context.Context, campaignId, itemId int) (models.Item, error) {
-	q := `
-		select 
-			id, 
-			campaign_id, 
-			name,
-			description,
-			priority,
-			removed,
-			created_at
-		from items  
-		where id = $1 and campaign_id = $2 and removed = false
-		`
-
-	var item models.Item
-
-	row := r.db.QueryRowContext(ctx, q, itemId, campaignId)
-	if err := row.Scan(
-		&item.ID,
-		&item.CampaignId,
-		&item.Name,
-		&item.Description,
-		&item.Priority,
-		&item.Removed,
-		&item.CreatedAt,
-	); err != nil {
-		return models.Item{}, fmt.Errorf("failed to query item: %w", err)
-	}
-
-	if err := row.Err(); err != nil {
-		return models.Item{}, fmt.Errorf("got row error of query item: %w", err)
-	}
-
-	return item, nil
 }
 
 // GetAllItems Получает все айтемы из БД
@@ -158,12 +123,13 @@ func (r *Repository) GetAllItems(ctx context.Context) ([]models.Item, error) {
 		); err != nil {
 			return nil, fmt.Errorf("failed to query item id: %w", err)
 		}
-
 		items = append(items, item)
 	}
-
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("got rows error: %w", err)
+	}
+	if items == nil {
+		return []models.Item{}, nil
 	}
 
 	return items, nil
@@ -179,6 +145,10 @@ func (r *Repository) UpdateItem(ctx context.Context, campaignId, itemId int, nam
 
 		row := r.db.QueryRowContext(ctx, q1, itemId, campaignId)
 		if err := row.Scan(&description); err != nil {
+
+			if errors.Is(err, sql.ErrNoRows) {
+				return models.Item{}, ItemNotFound
+			}
 			return models.Item{}, fmt.Errorf("failed to query description item: %w", err)
 		}
 	}
@@ -193,6 +163,9 @@ func (r *Repository) UpdateItem(ctx context.Context, campaignId, itemId int, nam
 		&item.Removed,
 		&item.CreatedAt,
 	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.Item{}, ItemNotFound
+		}
 		return models.Item{}, fmt.Errorf("failed to query item: %w", err)
 	}
 
@@ -205,25 +178,26 @@ func (r *Repository) UpdateItem(ctx context.Context, campaignId, itemId int, nam
 
 // DeleteItem Удаляет айтем
 func (r *Repository) DeleteItem(ctx context.Context, campaignId, itemId int) error {
-	q := `select removed from items where id = $1 and campaign_id = $2`
-	q1 := `update items set removed = true where id = $1 and campaign_id = $2`
+	q := `select removed from items where id = $1 and campaign_id = $2;`
+	q1 := `update items set removed = true where id = $1 and campaign_id = $2 and removed = false;`
 
 	var status bool
 	row := r.db.QueryRowContext(ctx, q, itemId, campaignId)
 	if err := row.Scan(&status); err != nil {
+
+		if errors.Is(err, sql.ErrNoRows) {
+			return ItemNotFound
+		}
 		return fmt.Errorf("failed to query item: %w", err)
 	}
+
 	if status == true {
-		return ItemAlreadyDelete
+		return ItemNotFound
 	}
 
-	res, err := r.db.ExecContext(ctx, q1, itemId, campaignId)
+	_, err := r.db.ExecContext(ctx, q1, itemId, campaignId)
 	if err != nil {
 		return fmt.Errorf("failed to delete item: %w", err)
-	}
-	deletedLines, _ := res.RowsAffected()
-	if deletedLines == 0 {
-		return ItemNotFound
 	}
 	return nil
 }

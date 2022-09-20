@@ -57,14 +57,13 @@ func (s *Service) GetAllItems(ctx context.Context) ([]models.Item, error) {
 	if err = s.redis.SetItem(ctx, items); err != nil {
 		return nil, fmt.Errorf("failed to add items in redis: %w", err)
 	}
-
 	return items, nil
 }
 
 func (s *Service) UpdateItem(ctx context.Context, campaignId, itemId int, name, description string) (models.Item, error) {
 	item, err := s.postgres.UpdateItem(ctx, campaignId, itemId, name, description)
 	if err != nil {
-		return models.Item{}, fmt.Errorf("failed to update item in postgresL %w", err)
+		return models.Item{}, fmt.Errorf("failed to update item in postgres: %w", err)
 	}
 
 	if err = s.UpdateItemsRedis(ctx); err != nil {

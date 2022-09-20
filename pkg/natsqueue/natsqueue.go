@@ -8,7 +8,7 @@ import (
 )
 
 type Nats struct {
-	n *nats.Conn
+	nc *nats.Conn
 }
 
 type ConfigNats struct {
@@ -27,5 +27,19 @@ func NewNats(ctx context.Context, cfg ConfigNats) (*Nats, error) {
 		nc.Close()
 	}(ctx)
 
-	return &Nats{n: nc}, nil
+	return &Nats{nc: nc}, nil
+}
+
+func (n *Nats) LogPublish(ctx, log string) error {
+	return nil
+}
+
+func (n *Nats) LogSubscribe(ctx, log string) error {
+	_, err := n.nc.Subscribe("logs", func(m *nats.Msg) {
+		fmt.Printf("Received a message: %s\n", string(m.Data))
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
