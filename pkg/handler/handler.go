@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 	"github.com/Hymiside/hezzl-test-task/pkg/service"
-	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -16,11 +17,11 @@ type Handler struct {
 }
 
 type Handlers struct {
-	serv *service.Service
+	service *service.Service
 }
 
 func NewHandlers(s service.Service) *Handlers {
-	return &Handlers{serv: &s}
+	return &Handlers{service: &s}
 }
 
 // InitHandler функция инициализирует обработчики
@@ -43,119 +44,120 @@ func (s *Handlers) createItem(w http.ResponseWriter, r *http.Request) {
 		err error
 	)
 
+	ctx := r.Context()
+
 	campaignId := r.URL.Query().Get("campaignId")
 
 	if err = json.NewDecoder(r.Body).Decode(&ni); err != nil {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	if ni.Name == "" || ni.Description == "" || campaignId == "" {
-		ResponseError(w, "invalid request", 404)
+	if ni.Name == "" || campaignId == "" {
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	ni.Removed = false
 	ni.CreatedAt = time.Now()
 	ni.CampaignId, err = strconv.Atoi(campaignId)
 	if err != nil {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	i, err = s.serv.CreateItem(ni)
+	i, err = s.service.CreateItem(ctx, ni)
 	if err != nil {
-		ResponseError(w, err.Error(), 404)
+		ResponseError(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	ResponseStatusOk(w, i)
+	ResponseOk(w, i)
 }
 
 func (s *Handlers) getItems(w http.ResponseWriter, r *http.Request) {
-	items, err := s.serv.GetItems()
+	ctx := r.Context()
+
+	items, err := s.service.GetAllItems(ctx)
 	if err != nil {
-		ResponseError(w, err.Error(), 404)
+		ResponseError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ResponseStatusOk2(w, items)
+	ResponseOk(w, items)
 }
 
 func (s *Handlers) updateItem(w http.ResponseWriter, r *http.Request) {
 	var (
 		err error
 		i   models.Item
-		ui  []models.Item
 	)
+
+	ctx := r.Context()
 
 	itemId := r.URL.Query().Get("id")
 	campaignId := r.URL.Query().Get("campaignId")
 
 	if err = json.NewDecoder(r.Body).Decode(&i); err != nil {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
 	if i.Name == "" || itemId == "" || campaignId == "" {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
 	i.CampaignId, err = strconv.Atoi(campaignId)
 	if err != nil {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
 	i.ID, err = strconv.Atoi(itemId)
 	if err != nil {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	ui, err = s.serv.UpdateItem(i)
+	i, err = s.service.UpdateItem(ctx, i.CampaignId, i.ID, i.Name, i.Description)
 	if err != nil {
-		ResponseError(w, err.Error(), 404)
+		ResponseError(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	ResponseStatusOk2(w, ui)
+	ResponseOk(w, i)
 }
 
 func (s *Handlers) deleteItem(w http.ResponseWriter, r *http.Request) {
-	var (
-		err error
-		i   models.Item
-		di  []models.Item
-	)
+	ctx := r.Context()
+
 	itemId := r.URL.Query().Get("id")
 	campaignId := r.URL.Query().Get("campaignId")
 
 	if itemId == "" || campaignId == "" {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	i.CampaignId, err = strconv.Atoi(campaignId)
+	campaignIdParsed, err := strconv.Atoi(campaignId)
 	if err != nil {
-		ResponseError(w, "invalid request", 404)
-		return
-	}
-	i.ID, err = strconv.Atoi(itemId)
-	if err != nil {
-		ResponseError(w, "invalid request", 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
-	di, err = s.serv.DeleteItem(i)
+	itemIdParsed, err := strconv.Atoi(itemId)
 	if err != nil {
-		ResponseError(w, err.Error(), 404)
+		ResponseError(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if err = s.service.DeleteItem(ctx, campaignIdParsed, itemIdParsed); err != nil {
+		ResponseError(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	diF := &models.DeleteItem{
-		ID:         di[0].ID,
-		CampaignId: di[0].CampaignId,
-		Removed:    di[0].Removed,
+		ID:         itemIdParsed,
+		CampaignId: campaignIdParsed,
+		Removed:    true,
 	}
 
-	ResponseStatusOk3(w, diF)
+	ResponseOk(w, diF)
 }

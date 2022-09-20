@@ -2,15 +2,15 @@ package config
 
 import (
 	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
+	"github.com/Hymiside/hezzl-test-task/pkg/repository/postgres"
+	"github.com/Hymiside/hezzl-test-task/pkg/repository/redis"
 	"os"
 
-	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
-	"github.com/Hymiside/hezzl-test-task/pkg/repository"
 	"github.com/Hymiside/hezzl-test-task/pkg/server"
 	"github.com/joho/godotenv"
 )
 
-func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.ConfigRedis, natsqueue.ConfigNats) {
+func InitConfig() (server.ConfigServer, postgres.ConfigRepository, redis.ConfigRedis, natsqueue.ConfigNats) {
 	_ = godotenv.Load()
 
 	host, _ := os.LookupEnv("SERVICE_HOST")
@@ -28,7 +28,7 @@ func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.
 	hostN, _ := os.LookupEnv("N_HOST")
 	portN, _ := os.LookupEnv("N_PORT")
 
-	configDb := repository.ConfigRepository{
+	configDb := postgres.ConfigRepository{
 		Host:     hostDb,
 		Port:     portDb,
 		User:     userDb,
@@ -41,7 +41,7 @@ func InitConfig() (server.ConfigServer, repository.ConfigRepository, rediscache.
 		Port: port,
 	}
 
-	configRedis := rediscache.ConfigRedis{
+	configRedis := redis.ConfigRedis{
 		Host: hostRd,
 		Port: portRd,
 	}

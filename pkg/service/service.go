@@ -1,113 +1,101 @@
 package service
 
 import (
-	"log"
-
+	"context"
+	"fmt"
 	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
+	"github.com/Hymiside/hezzl-test-task/pkg/repository/postgres"
+	"github.com/Hymiside/hezzl-test-task/pkg/repository/redis"
 
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
-	"github.com/Hymiside/hezzl-test-task/pkg/rediscache"
-	"github.com/Hymiside/hezzl-test-task/pkg/repository"
 )
 
 type Service struct {
-	repo *repository.Repository
-	ch   *rediscache.Redis
-	nc   *natsqueue.Nats
+	postgres *postgres.Repository
+	redis    *redis.Repository
+	nc       *natsqueue.Nats
 }
 
-func NewService(r repository.Repository, ch rediscache.Redis, nc natsqueue.Nats) *Service {
-	return &Service{repo: &r, ch: &ch, nc: &nc}
+func NewService(r *postgres.Repository, redis *redis.Repository, nc natsqueue.Nats) *Service {
+	return &Service{postgres: r, redis: redis, nc: &nc}
 }
 
-func (r *Service) CreateItem(ni models.NewItem) (models.Item, error) {
-	if err := r.repo.GetCampaign(ni); err != nil {
+func (s *Service) CreateItem(ctx context.Context, ni models.NewItem) (models.Item, error) {
+	itemId, priority, err := s.postgres.CreateItem(ctx, ni)
+	if err != nil {
+		return models.Item{}, fmt.Errorf("failed to create item in postgres: %w", err)
+	}
+
+	item := models.Item{
+		ID:          itemId,
+		CampaignId:  ni.CampaignId,
+		Name:        ni.Name,
+		Description: ni.Description,
+		Priority:    priority,
+		Removed:     ni.Removed,
+		CreatedAt:   ni.CreatedAt,
+	}
+
+	if err = s.UpdateItemsRedis(ctx); err != nil {
 		return models.Item{}, err
 	}
 
-	i, err := r.repo.CreateItem(ni)
+	return item, nil
+}
+
+func (s *Service) GetAllItems(ctx context.Context) ([]models.Item, error) {
+	items, err := s.redis.GetAllItems(ctx)
+	if err == nil {
+		return items, nil
+	}
+
+	items, err = s.postgres.GetAllItems(ctx)
 	if err != nil {
+		return nil, fmt.Errorf("failed to get items from postgres: %w", err)
+	}
+
+	if err = s.redis.SetItem(ctx, items); err != nil {
+		return nil, fmt.Errorf("failed to add items in redis: %w", err)
+	}
+
+	return items, nil
+}
+
+func (s *Service) UpdateItem(ctx context.Context, campaignId, itemId int, name, description string) (models.Item, error) {
+	item, err := s.postgres.UpdateItem(ctx, campaignId, itemId, name, description)
+	if err != nil {
+		return models.Item{}, fmt.Errorf("failed to update item in postgresL %w", err)
+	}
+
+	if err = s.UpdateItemsRedis(ctx); err != nil {
 		return models.Item{}, err
 	}
-	return i, nil
+
+	return item, nil
 }
 
-func (r *Service) GetItems() ([]models.Item, error) {
-	dataItems, err := r.GetItemsRedis()
-	if err != nil {
-		dataItems, err = r.repo.GetItems()
-		if err != nil {
-			return nil, err
-		}
-
-		if err = r.SetItemsRedis(dataItems); err != nil {
-			log.Println("error set cache") // необходимо отправить лог в ClickHouse
-		}
-		return dataItems, nil
+func (s *Service) DeleteItem(ctx context.Context, campaignId, itemId int) error {
+	if err := s.postgres.DeleteItem(ctx, campaignId, itemId); err != nil {
+		return fmt.Errorf("failed to delete item in postgres: %w", err)
 	}
-	return dataItems, nil
-}
-
-func (r *Service) GetItemsRedis() ([]models.Item, error) {
-	dataCache, err := r.ch.GetItems()
-	if err != nil {
-		return nil, err
-	}
-	return dataCache, err
-}
-
-func (r *Service) SetItemsRedis(i []models.Item) error {
-	if err := r.ch.SetItems(i); err != nil {
-		return err
+	if err := s.redis.DeleteItem(ctx); err != nil {
+		return fmt.Errorf("failed to delete item in redis: %w", err)
 	}
 	return nil
 }
 
-func (r *Service) DeleteItemsRedis() error {
-	if err := r.ch.DeleteItems(); err != nil {
-		return err
+func (s *Service) UpdateItemsRedis(ctx context.Context) error {
+	if err := s.redis.DeleteItem(ctx); err != nil {
+		return fmt.Errorf("failed to update item in redis: %w", err)
+	}
+
+	items, err := s.postgres.GetAllItems(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get items from postgres: %w", err)
+	}
+
+	if err = s.redis.SetItem(ctx, items); err != nil {
+		return fmt.Errorf("failed to update item in redis: %w", err)
 	}
 	return nil
-}
-
-func (r *Service) UpdateItem(i models.Item) ([]models.Item, error) {
-	var dataItems []models.Item
-
-	ui, err := r.repo.UpdateItem(i)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = r.DeleteItemsRedis(); err != nil {
-		return nil, err
-	}
-	dataItems, err = r.repo.GetItems()
-	if err != nil {
-		return nil, err
-	}
-	if err = r.SetItemsRedis(dataItems); err != nil {
-		log.Println("error set cache") // необходимо отправить лог в ClickHouse
-	}
-	return ui, nil
-}
-
-func (r *Service) DeleteItem(i models.Item) ([]models.Item, error) {
-	var dataItems []models.Item
-
-	deleteItem, err := r.repo.DeleteItem(i)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = r.DeleteItemsRedis(); err != nil {
-		return nil, err
-	}
-	dataItems, err = r.repo.GetItems()
-	if err != nil {
-		return nil, err
-	}
-	if err = r.SetItemsRedis(dataItems); err != nil {
-		log.Println("error set cache") // необходимо отправить лог в ClickHouse
-	}
-	return deleteItem, nil
 }
