@@ -16,8 +16,9 @@ type Service struct {
 	nc       *natsqueue.Nats
 }
 
-func NewService(r *postgres.Repository, redis *redis.Repository, nc natsqueue.Nats) *Service {
-	return &Service{postgres: r, redis: redis, nc: &nc}
+func NewService(r *postgres.Repository, redis *redis.Repository, nc *natsqueue.Nats) *Service {
+	go nc.Sub()
+	return &Service{postgres: r, redis: redis, nc: nc}
 }
 
 func (s *Service) CreateItem(ctx context.Context, ni models.NewItem) (models.Item, error) {
@@ -40,6 +41,7 @@ func (s *Service) CreateItem(ctx context.Context, ni models.NewItem) (models.Ite
 		return models.Item{}, err
 	}
 
+	s.nc.Pub([]byte(fmt.Sprintf("SUCCESSFUL-create new item-%d", itemId)))
 	return item, nil
 }
 
@@ -70,6 +72,7 @@ func (s *Service) UpdateItem(ctx context.Context, campaignId, itemId int, name, 
 		return models.Item{}, err
 	}
 
+	s.nc.Pub([]byte(fmt.Sprintf("SUCCESSFUL-update item-%d", itemId)))
 	return item, nil
 }
 
@@ -80,6 +83,7 @@ func (s *Service) DeleteItem(ctx context.Context, campaignId, itemId int) error 
 	if err := s.redis.DeleteItem(ctx); err != nil {
 		return fmt.Errorf("failed to delete item in redis: %w", err)
 	}
+	s.nc.Pub([]byte(fmt.Sprintf("SUCCESSFUL-delete item-%d", itemId)))
 	return nil
 }
 

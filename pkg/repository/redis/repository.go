@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/cache/v8"
-
-	"github.com/go-redis/redis/v8"
-
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
+
+	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
 )
 
 type ConfigRedis struct {
@@ -27,7 +26,8 @@ const ttl = time.Minute
 
 func NewRepository(ctx context.Context, c ConfigRedis) (*Repository, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:%s", c.Host, c.Port),
+		Addr:       fmt.Sprintf("%s:%s", c.Host, c.Port),
+		MaxConnAge: 10000 * time.Hour,
 	})
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("failed to ping redis: %w", err)

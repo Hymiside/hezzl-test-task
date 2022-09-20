@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"time"
 
 	"github.com/Hymiside/hezzl-test-task/pkg/models"
 )
@@ -71,7 +72,7 @@ func (r *Repository) CreateItem(ctx context.Context, item models.NewItem) (int, 
 	}
 
 	// Создаем айтем
-	q2 := `INSERT INTO items (campaign_id, name, description, removed, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, priority`
+	q2 := `insert into items (campaign_id, name, description, removed, created_at) values ($1, $2, $3, $4, $5) returning id, priority`
 	row = r.db.QueryRowContext(ctx, q2, item.CampaignId, item.Name, item.Description, item.Removed, item.CreatedAt)
 
 	var itemId, priority int
@@ -198,6 +199,18 @@ func (r *Repository) DeleteItem(ctx context.Context, campaignId, itemId int) err
 	_, err := r.db.ExecContext(ctx, q1, itemId, campaignId)
 	if err != nil {
 		return fmt.Errorf("failed to delete item: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) CreateLog(ctx context.Context, queue [][]byte) error {
+	q := `insert into logs (log, created_at) values ($1, $2);`
+
+	for i := 0; i < 24; i++ {
+		_, err := r.db.ExecContext(ctx, q, string(queue[i]), time.Now())
+		if err != nil {
+			return fmt.Errorf("failed to create log: %w", err)
+		}
 	}
 	return nil
 }

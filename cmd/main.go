@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"log"
 	"os"
 	"os/signal"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/Hymiside/hezzl-test-task/pkg/config"
 	"github.com/Hymiside/hezzl-test-task/pkg/handler"
-	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository/postgres"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository/redis"
 	"github.com/Hymiside/hezzl-test-task/pkg/server"
@@ -35,12 +35,12 @@ func main() {
 		log.Panicf("failed to create postgres repository: %v", err)
 	}
 
-	nc, err := natsqueue.NewNats(ctx, cfgN)
+	nc, err := natsqueue.NewNats(ctx, cfgN, repo)
 	if err != nil {
 		log.Panicf("failed to create nats client: %v", err)
 	}
 
-	services := service.NewService(repo, rdb, *nc)
+	services := service.NewService(repo, rdb, nc)
 
 	go func() {
 		quit := make(chan os.Signal, 1)

@@ -3,12 +3,13 @@ package natsqueue
 import (
 	"context"
 	"fmt"
-
+	"github.com/Hymiside/hezzl-test-task/pkg/repository/postgres"
 	"github.com/nats-io/nats.go"
 )
 
 type Nats struct {
 	nc *nats.Conn
+	r  *postgres.Repository
 }
 
 type ConfigNats struct {
@@ -16,7 +17,9 @@ type ConfigNats struct {
 	Port string
 }
 
-func NewNats(ctx context.Context, cfg ConfigNats) (*Nats, error) {
+var Logs [][]byte
+
+func NewNats(ctx context.Context, cfg ConfigNats, r *postgres.Repository) (*Nats, error) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://%s:%s", cfg.Host, cfg.Port))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect nats: %w", err)
@@ -27,16 +30,23 @@ func NewNats(ctx context.Context, cfg ConfigNats) (*Nats, error) {
 		nc.Close()
 	}(ctx)
 
-	return &Nats{nc: nc}, nil
+	return &Nats{nc: nc, r: r}, nil
 }
 
-func (n *Nats) LogPublish(ctx, log string) error {
-	return nil
+func (n *Nats) Pub(data []byte) error {
+	return n.nc.Publish("hezzl", data)
 }
 
-func (n *Nats) LogSubscribe(ctx, log string) error {
-	_, err := n.nc.Subscribe("logs", func(m *nats.Msg) {
-		fmt.Printf("Received a message: %s\n", string(m.Data))
+func (n *Nats) Sub() error {
+	_, err := n.nc.Subscribe("hezzl", func(msg *nats.Msg) {
+		if len(Logs) < 24 {
+			Logs = append(Logs, msg.Data)
+		} else {
+			if err := n.r.CreateLog(context.Background(), Logs); err != nil {
+				fmt.Println(err.Error())
+			}
+			Logs = nil
+		}
 	})
 	if err != nil {
 		return err
