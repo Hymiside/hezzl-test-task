@@ -24,7 +24,7 @@ func NewHandlers(s service.Service) *Handlers {
 	return &Handlers{service: &s}
 }
 
-// InitHandler функция инициализирует обработчики
+// InitHandler инициализирует хэндлеры
 func (h *Handler) InitHandler(s service.Service) *chi.Mux {
 	h.handler = chi.NewRouter()
 	handlers := NewHandlers(s)

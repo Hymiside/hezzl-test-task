@@ -72,7 +72,6 @@ func (r *Repository) CreateItem(ctx context.Context, item models.NewItem) (int, 
 		return 0, 0, fmt.Errorf("got row error of query campaning: %w", err)
 	}
 
-	// Создаем айтем
 	q2 := `insert into items (campaign_id, name, description, removed, created_at) values ($1, $2, $3, $4, $5) returning id, priority`
 	row = r.db.QueryRowContext(ctx, q2, item.CampaignId, item.Name, item.Description, item.Removed, item.CreatedAt)
 
@@ -92,7 +91,7 @@ func (r *Repository) CreateItem(ctx context.Context, item models.NewItem) (int, 
 	return itemId, priority, nil
 }
 
-// GetAllItems Получает все айтемы из БД
+// GetAllItems получает все айтемы из БД
 func (r *Repository) GetAllItems(ctx context.Context) ([]models.Item, error) {
 	q := `
 		select
@@ -137,7 +136,7 @@ func (r *Repository) GetAllItems(ctx context.Context) ([]models.Item, error) {
 	return items, nil
 }
 
-// UpdateItem Обновляет значение айтема
+// UpdateItem обновляет значение айтема
 func (r *Repository) UpdateItem(ctx context.Context, campaignId, itemId int, name, description string) (models.Item, error) {
 	q := `update items set name = $3, description = $4 where id = $1 and campaign_id = $2 and removed = false returning id, campaign_id, name, description, priority, removed, created_at`
 	var item models.Item
@@ -178,7 +177,7 @@ func (r *Repository) UpdateItem(ctx context.Context, campaignId, itemId int, nam
 	return item, nil
 }
 
-// DeleteItem Удаляет айтем
+// DeleteItem удаляет айтем
 func (r *Repository) DeleteItem(ctx context.Context, campaignId, itemId int) error {
 	q := `select removed from items where id = $1 and campaign_id = $2;`
 	q1 := `update items set removed = true where id = $1 and campaign_id = $2 and removed = false;`

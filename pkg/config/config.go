@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// InitConfig инициализирует конфиги
 func InitConfig() (server.ConfigServer, postgres.ConfigRepository, redis.ConfigRedis, natsqueue.ConfigNats) {
 	_ = godotenv.Load()
 

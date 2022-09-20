@@ -17,6 +17,7 @@ import (
 	"github.com/Hymiside/hezzl-test-task/pkg/service"
 )
 
+// main инициализирует работу всего сервиса
 func main() {
 	cfgSrv, cfgDb, cfgRd, cfgN := config.InitConfig()
 
