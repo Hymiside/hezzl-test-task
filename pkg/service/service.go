@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository/postgres"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository/redis"

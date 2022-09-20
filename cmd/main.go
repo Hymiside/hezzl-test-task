@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 
 	"github.com/Hymiside/hezzl-test-task/pkg/config"
 	"github.com/Hymiside/hezzl-test-task/pkg/handler"

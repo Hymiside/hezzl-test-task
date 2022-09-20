@@ -1,10 +1,11 @@
 package config
 
 import (
+	"os"
+
 	"github.com/Hymiside/hezzl-test-task/pkg/natsqueue"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository/postgres"
 	"github.com/Hymiside/hezzl-test-task/pkg/repository/redis"
-	"os"
 
 	"github.com/Hymiside/hezzl-test-task/pkg/server"
 	"github.com/joho/godotenv"
